@@ -201,7 +201,7 @@ fun DealingSheet(
                     Slider(
                         value = proposedPrice.toFloat(),
                         onValueChange = { proposedPrice = it.toDouble() },
-                        valueRange = (visitor.baseOfferedPricePerGram * 0.8f)..(visitor.baseOfferedPricePerGram * 1.6f),
+                        valueRange = (visitor.baseOfferedPricePerGram.toFloat() * 0.8f)..(visitor.baseOfferedPricePerGram.toFloat() * 1.6f),
                         modifier = Modifier.weight(1f)
                     )
                     Text(

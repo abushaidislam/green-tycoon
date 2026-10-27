@@ -4,6 +4,7 @@ import com.greentycoon.game.model.*
 import java.util.Random
 import java.util.UUID
 import kotlin.math.max
+import kotlin.random.asKotlinRandom
 
 object DealingEngine {
 
@@ -76,21 +77,23 @@ object DealingEngine {
             return null // No customer if player has no inventory
         }
 
+        val kRandom = random.asKotlinRandom()
+
         // Random roll for customer type (90% regular customers, 5% cop, 5% burglar)
         val roll = random.nextFloat()
         val template = when {
             roll < 0.05f && state.player.level >= 3 -> CUSTOMER_TEMPLATES.first { it.type == CustomerType.UNDERCOVER_COP }
             roll < 0.10f && state.player.level >= 2 -> CUSTOMER_TEMPLATES.first { it.type == CustomerType.BURGLAR }
-            else -> CUSTOMER_TEMPLATES.filter { it.type != CustomerType.UNDERCOVER_COP && it.type != CustomerType.BURGLAR }.random(random)
+            else -> CUSTOMER_TEMPLATES.filter { it.type != CustomerType.UNDERCOVER_COP && it.type != CustomerType.BURGLAR }.random(kRandom)
         }
 
         // Select a strain that the player actually has in stock
-        val chosenStrainId = availableStrains.keys.toList().random(random)
+        val chosenStrainId = availableStrains.keys.toList().random(kRandom)
         val availableGrams = availableStrains[chosenStrainId] ?: 1
         val strain = PlantStrain.findById(chosenStrainId)
 
         // Request between 1 and min(25, availableGrams)
-        val requestedGrams = (1..max(1, minOf(25, availableGrams))).random(random)
+        val requestedGrams = (1..max(1, minOf(25, availableGrams))).random(kRandom)
 
         // Base price calculation with slight random fluctuation (+/- 10%)
         val priceMultiplier = 0.9 + (random.nextDouble() * 0.2)
@@ -107,7 +110,7 @@ object DealingEngine {
             baseOfferedPricePerGram = baseOfferPrice,
             currentOfferPricePerGram = baseOfferPrice,
             patienceSeconds = 45,
-            dialogueText = template.dialogues.random(random),
+            dialogueText = template.dialogues.random(kRandom),
             avatarId = template.avatarId
         )
     }

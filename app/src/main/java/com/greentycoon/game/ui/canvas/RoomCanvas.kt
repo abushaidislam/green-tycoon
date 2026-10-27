@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import com.greentycoon.game.model.GameState
+import com.greentycoon.game.model.PotSlot
 import com.greentycoon.game.model.RoomSide
 import com.greentycoon.game.ui.theme.*
 

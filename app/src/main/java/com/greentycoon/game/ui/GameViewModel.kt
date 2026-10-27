@@ -382,7 +382,7 @@ class GameViewModel @JvmOverloads constructor(
 
     private fun saveCurrentState() {
         try {
-            val app = getApplication<Application?>()
+            val app = getApplication<Application>()
             if (app != null) {
                 SecureSaveManager.saveGame(app, _gameState.value)
             }
