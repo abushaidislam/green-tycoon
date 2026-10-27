@@ -103,6 +103,35 @@ class GameViewModelTest {
     }
 
     @Test
+    fun testAcceptDealUndercoverCopBribe() {
+        val cop = NpcCustomer(
+            id = "cop_1",
+            name = "Officer Bob - undercover cop",
+            type = CustomerType.UNDERCOVER_COP,
+            requestedStrainId = "sour_diesel",
+            requestedGrams = 10,
+            baseOfferedPricePerGram = 0.0,
+            currentOfferPricePerGram = 0.0,
+            dialogueText = "Police! Settle this right here."
+        )
+        val initialState = GameState(
+            player = PlayerProfile(cash = 1000.0, respectScore = 10),
+            currentVisitor = cop
+        )
+        val vm = GameViewModel(initialState = initialState, enableLoop = false)
+
+        vm.handleAction(GameAction.AcceptDeal("cop_1"))
+
+        val updated = vm.gameState.value
+        assertNull("Cop leaves after bribe is accepted", updated.currentVisitor)
+        // Bribe calculation: 20% of $1,000 = $200 -> remaining cash is $800
+        assertEquals(800.0, updated.player.cash, 0.01)
+        assertEquals(12, updated.player.respectScore) // Respect increases by +2
+        assertEquals("Bribed Officer Bob ($200). Raid avoided!", updated.bannerNotification)
+        assertTrue(updated.lastVisitorDepartureTimestamp > 0L)
+    }
+
+    @Test
     fun testFertilizePotSuccess() {
         val plant = PlantInstance(strain = PlantStrain.SOUR_DIESEL, fertilizerActive = false)
         val initialState = GameState(
