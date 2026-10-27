@@ -261,7 +261,7 @@ private fun GrowRoomStation(
         Spacer(modifier = Modifier.weight(1f))
 
         // 2. Pots Layout (Authentic rows of pots)
-        val potRows = gameState.pots.chunked(3)
+        val potRows = remember(gameState.pots) { gameState.pots.chunked(3) }
         Column(
             modifier = Modifier
                 .padding(bottom = 75.dp)
