@@ -132,6 +132,12 @@ object SecureSaveManager {
                 pots.add(PotSlot(id = id, potType = potType, isUnlocked = isUnlocked, plant = plant))
             }
 
+            // Ensure backward compatibility: pad legacy saves with fewer than 6 pots up to 6 slots
+            while (pots.size < 6) {
+                val nextId = pots.size
+                pots.add(PotSlot(id = nextId, potType = PotType.PLASTIC, isUnlocked = false, plant = null))
+            }
+
             val invObj = root.getJSONObject("inventory")
             val seedsMap = mutableMapOf<String, Int>()
             invObj.optJSONObject("seeds")?.let { sObj ->

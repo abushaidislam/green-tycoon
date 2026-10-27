@@ -3,14 +3,19 @@ package com.greentycoon.game.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.greentycoon.game.audio.GameSoundEvent
 import com.greentycoon.game.engine.DealingEngine
 import com.greentycoon.game.engine.GrowthEngine
 import com.greentycoon.game.model.*
 import com.greentycoon.game.storage.SecureSaveManager
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -26,6 +31,12 @@ class GameViewModel @JvmOverloads constructor(
 
     private val _gameState = MutableStateFlow(initialState ?: GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
+
+    private val _soundEvents = MutableSharedFlow<GameSoundEvent>(
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val soundEvents: SharedFlow<GameSoundEvent> = _soundEvents.asSharedFlow()
 
     private var loopJob: Job? = null
     private var tickCounter = 0
@@ -67,6 +78,7 @@ class GameViewModel @JvmOverloads constructor(
 
     private fun onTick() {
         tickCounter++
+        var soundToEmit: GameSoundEvent? = null
         _gameState.update { state ->
             // 1. Tick all unlocked pots with plants
             val updatedPots = state.pots.map { pot ->
@@ -99,6 +111,7 @@ class GameViewModel @JvmOverloads constructor(
                     visitor = DealingEngine.tryGenerateVisitor(state, random)
                     if (visitor != null) {
                         notification = "Someone's knocking at the door! 🚪"
+                        soundToEmit = GameSoundEvent.DoorKnock
                     }
                 }
             }
@@ -111,6 +124,7 @@ class GameViewModel @JvmOverloads constructor(
                 lastSavedTimestamp = System.currentTimeMillis()
             )
         }
+        soundToEmit?.let { _soundEvents.tryEmit(it) }
 
         // Auto-save every 10 seconds
         if (tickCounter % 10 == 0) {
@@ -119,47 +133,50 @@ class GameViewModel @JvmOverloads constructor(
     }
 
     fun handleAction(action: GameAction) {
+        var soundToEmit: GameSoundEvent? = null
         _gameState.update { state ->
-            val newState = when (action) {
+            val (newState, sound) = when (action) {
                 is GameAction.WaterPot -> handleWaterPot(state, action.potId)
                 is GameAction.FertilizePot -> handleFertilizePot(state, action.potId)
                 is GameAction.HarvestPot -> handleHarvestPot(state, action.potId)
-                is GameAction.PlantSeedInPot -> handlePlantSeed(state, action.potId, action.strainId)
-                is GameAction.UnlockPot -> handleUnlockPot(state, action.potId)
-                is GameAction.UpgradePot -> handleUpgradePot(state, action.potId, action.targetPotType)
-                is GameAction.BuySeed -> handleBuySeed(state, action.strainId, action.count)
-                is GameAction.BuyWaterBottle -> handleBuyWater(state, action.count)
-                is GameAction.BuyFertilizer -> handleBuyFertilizer(state, action.count)
-                is GameAction.UpgradeLight -> handleUpgradeLight(state, action.newLevel)
-                is GameAction.SwitchRoomSide -> state.copy(currentRoomSide = action.side)
                 is GameAction.AcceptDeal -> handleAcceptDeal(state, action.visitorId)
-                is GameAction.BargainDeal -> handleBargainDeal(state, action.visitorId, action.proposedPrice)
-                is GameAction.KickCustomer -> handleKickCustomer(state, action.visitorId)
-                is GameAction.DismissNotification -> state.copy(bannerNotification = null)
+                is GameAction.PlantSeedInPot -> handlePlantSeed(state, action.potId, action.strainId) to null
+                is GameAction.UnlockPot -> handleUnlockPot(state, action.potId) to null
+                is GameAction.UpgradePot -> handleUpgradePot(state, action.potId, action.targetPotType) to null
+                is GameAction.BuySeed -> handleBuySeed(state, action.strainId, action.count) to null
+                is GameAction.BuyWaterBottle -> handleBuyWater(state, action.count) to null
+                is GameAction.BuyFertilizer -> handleBuyFertilizer(state, action.count) to null
+                is GameAction.UpgradeLight -> handleUpgradeLight(state, action.newLevel) to null
+                is GameAction.SwitchRoomSide -> state.copy(currentRoomSide = action.side) to null
+                is GameAction.BargainDeal -> handleBargainDeal(state, action.visitorId, action.proposedPrice) to null
+                is GameAction.KickCustomer -> handleKickCustomer(state, action.visitorId) to null
+                is GameAction.DismissNotification -> state.copy(bannerNotification = null) to null
             }
+            soundToEmit = sound
             newState
         }
+        soundToEmit?.let { _soundEvents.tryEmit(it) }
         saveCurrentState()
     }
 
-    private fun handleWaterPot(state: GameState, potId: Int): GameState {
-        val pot = state.pots.find { it.id == potId } ?: return state
-        val plant = pot.plant ?: return state
+    private fun handleWaterPot(state: GameState, potId: Int): Pair<GameState, GameSoundEvent?> {
+        val pot = state.pots.find { it.id == potId } ?: return state to null
+        val plant = pot.plant ?: return state to null
         if (state.inventory.waterBottles <= 0) {
-            return state.copy(bannerNotification = "Out of water! Buy more in the shop.")
+            return state.copy(bannerNotification = "Out of water! Buy more in the shop.") to null
         }
 
         val updatedPlant = GrowthEngine.waterPlant(plant)
         val updatedPots = state.pots.map { if (it.id == potId) it.copy(plant = updatedPlant) else it }
         val updatedInv = state.inventory.copy(waterBottles = state.inventory.waterBottles - 1)
 
-        return state.copy(pots = updatedPots, inventory = updatedInv)
+        return state.copy(pots = updatedPots, inventory = updatedInv) to GameSoundEvent.Water
     }
 
-    private fun handleFertilizePot(state: GameState, potId: Int): GameState {
-        val pot = state.pots.find { it.id == potId } ?: return state
-        val plant = pot.plant ?: return state
-        if (plant.fertilizerActive || state.inventory.fertilizers <= 0) return state
+    private fun handleFertilizePot(state: GameState, potId: Int): Pair<GameState, GameSoundEvent?> {
+        val pot = state.pots.find { it.id == potId } ?: return state to null
+        val plant = pot.plant ?: return state to null
+        if (plant.fertilizerActive || state.inventory.fertilizers <= 0) return state to null
 
         val updatedPlant = GrowthEngine.fertilizePlant(plant)
         val updatedPots = state.pots.map { if (it.id == potId) it.copy(plant = updatedPlant) else it }
@@ -169,13 +186,13 @@ class GameViewModel @JvmOverloads constructor(
             pots = updatedPots,
             inventory = updatedInv,
             bannerNotification = "Fertilizer applied! 1.5x Growth speed."
-        )
+        ) to GameSoundEvent.Fertilize
     }
 
-    private fun handleHarvestPot(state: GameState, potId: Int): GameState {
-        val pot = state.pots.find { it.id == potId } ?: return state
-        val plant = pot.plant ?: return state
-        if (plant.stage != GrowthStage.READY) return state
+    private fun handleHarvestPot(state: GameState, potId: Int): Pair<GameState, GameSoundEvent?> {
+        val pot = state.pots.find { it.id == potId } ?: return state to null
+        val plant = pot.plant ?: return state to null
+        if (plant.stage != GrowthStage.READY) return state to null
 
         val yieldGrams = GrowthEngine.calculateYield(plant, pot.potType)
         val strainId = plant.strain.id
@@ -197,7 +214,7 @@ class GameViewModel @JvmOverloads constructor(
             inventory = state.inventory.copy(harvestedStock = updatedStock),
             player = updatedPlayer,
             bannerNotification = "Harvested $yieldGrams grams of ${plant.strain.name}! (+$xpGained XP)"
-        )
+        ) to GameSoundEvent.Harvest
     }
 
     private fun handlePlantSeed(state: GameState, potId: Int, strainId: String): GameState {
@@ -226,11 +243,7 @@ class GameViewModel @JvmOverloads constructor(
         val pot = state.pots.find { it.id == potId } ?: return state
         if (pot.isUnlocked) return state
 
-        val unlockCost = when (potId) {
-            1 -> 150.0
-            2 -> 450.0
-            else -> 1000.0
-        }
+        val unlockCost = state.calculateUnlockCost(potId)
         if (state.player.cash < unlockCost) return state.copy(bannerNotification = "Not enough cash!")
 
         val updatedPots = state.pots.map { if (it.id == potId) it.copy(isUnlocked = true) else it }
@@ -314,9 +327,9 @@ class GameViewModel @JvmOverloads constructor(
         return state.copy(currentVisitor = visitor.copy(currentOfferPricePerGram = proposedPrice))
     }
 
-    private fun handleAcceptDeal(state: GameState, visitorId: String): GameState {
-        val visitor = state.currentVisitor ?: return state
-        if (visitor.id != visitorId) return state
+    private fun handleAcceptDeal(state: GameState, visitorId: String): Pair<GameState, GameSoundEvent?> {
+        val visitor = state.currentVisitor ?: return state to null
+        if (visitor.id != visitorId) return state to null
 
         // Special handling for Undercover Cop
         if (visitor.type == CustomerType.UNDERCOVER_COP) {
@@ -327,14 +340,14 @@ class GameViewModel @JvmOverloads constructor(
                 currentVisitor = null,
                 lastVisitorDepartureTimestamp = System.currentTimeMillis(),
                 bannerNotification = "Bribed Officer Bob ($${bribe.toInt()}). Raid avoided!"
-            )
+            ) to null
         }
 
         // Standard Deal
         val strainId = visitor.requestedStrainId
         val currentGrams = state.inventory.harvestedStock[strainId] ?: 0
         val gramsToSell = minOf(visitor.requestedGrams, currentGrams)
-        if (gramsToSell <= 0) return state.copy(bannerNotification = "You don't have enough grams to sell!")
+        if (gramsToSell <= 0) return state.copy(bannerNotification = "You don't have enough grams to sell!") to null
 
         val totalEarnings = gramsToSell * visitor.currentOfferPricePerGram
         val updatedStock = state.inventory.harvestedStock.toMutableMap().apply {
@@ -352,7 +365,7 @@ class GameViewModel @JvmOverloads constructor(
             currentVisitor = null,
             lastVisitorDepartureTimestamp = System.currentTimeMillis(),
             bannerNotification = "Sold $gramsToSell grams to ${visitor.name} for $${totalEarnings.toInt()}! (+$xpGained XP)"
-        )
+        ) to GameSoundEvent.CashEarned
     }
 
     private fun handleKickCustomer(state: GameState, visitorId: String): GameState {

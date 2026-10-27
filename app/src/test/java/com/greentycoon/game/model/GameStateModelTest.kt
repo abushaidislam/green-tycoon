@@ -11,10 +11,15 @@ class GameStateModelTest {
 
         assertEquals(250.0, state.player.cash, 0.001)
         assertEquals(1, state.player.level)
-        assertEquals(4, state.pots.size)
+        assertEquals(6, state.pots.size)
         assertTrue("Pot 0 should be unlocked by default", state.pots[0].isUnlocked)
-        assertFalse("Pot 1 should be locked initially", state.pots[1].isUnlocked)
+        assertTrue("Pot 1 should be unlocked by default", state.pots[1].isUnlocked)
+        assertFalse("Pot 2 should be locked initially", state.pots[2].isUnlocked)
+        assertFalse("Pot 3 should be locked initially", state.pots[3].isUnlocked)
+        assertFalse("Pot 4 should be locked initially", state.pots[4].isUnlocked)
+        assertFalse("Pot 5 should be locked initially", state.pots[5].isUnlocked)
         assertNull(state.pots[0].plant)
+        assertNull(state.pots[1].plant)
         assertEquals(3, state.inventory.seeds["sour_diesel"])
         assertEquals(0, state.inventory.totalWeedGrams)
         assertEquals(RoomSide.PLANTS, state.currentRoomSide)
@@ -46,5 +51,16 @@ class GameStateModelTest {
 
         val room4 = RoomUpgrades(lightLevel = 4)
         assertEquals(2.0f, room4.lightGrowthMultiplier, 0.001f)
+    }
+
+    @Test
+    fun testCalculateUnlockCost() {
+        val state = GameState()
+        assertEquals(0.0, state.calculateUnlockCost(0), 0.001)
+        assertEquals(150.0, state.calculateUnlockCost(1), 0.001)
+        assertEquals(450.0, state.calculateUnlockCost(2), 0.001)
+        assertEquals(1000.0, state.calculateUnlockCost(3), 0.001)
+        assertEquals(2500.0, state.calculateUnlockCost(4), 0.001)
+        assertEquals(5000.0, state.calculateUnlockCost(5), 0.001)
     }
 }

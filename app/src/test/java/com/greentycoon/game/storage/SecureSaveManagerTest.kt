@@ -35,10 +35,44 @@ class SecureSaveManagerTest {
         assertNotNull(restoredState)
         assertEquals(1250.0, restoredState!!.player.cash, 0.001)
         assertEquals(3, restoredState.player.level)
-        assertEquals(2, restoredState.pots.size)
+        assertEquals(6, restoredState.pots.size)
         assertEquals(PotType.CERAMIC, restoredState.pots[0].potType)
         assertEquals(45.5f, restoredState.pots[0].plant!!.growthProgress, 0.01f)
         assertEquals(25, restoredState.inventory.harvestedStock["og_kush"])
+    }
+
+    @Test
+    fun testLegacyFourPotSaveMigrationToSixPots() {
+        val legacyJson = """
+            {
+                "player": { "cash": 500.0, "level": 1, "currentXp": 0, "respectScore": 10, "totalHarvestsGrams": 0 },
+                "pots": [
+                    { "id": 0, "potType": "PLASTIC", "isUnlocked": true, "plant": null },
+                    { "id": 1, "potType": "PLASTIC", "isUnlocked": true, "plant": null },
+                    { "id": 2, "potType": "PLASTIC", "isUnlocked": false, "plant": null },
+                    { "id": 3, "potType": "PLASTIC", "isUnlocked": false, "plant": null }
+                ],
+                "inventory": { "seeds": { "sour_diesel": 3 }, "harvestedStock": {}, "waterBottles": 5, "fertilizers": 2 },
+                "roomUpgrades": { "lightLevel": 1, "ventilationLevel": 1, "vinylPlayerActive": false },
+                "currentRoomSide": "PLANTS"
+            }
+        """.trimIndent()
+
+        val state = SecureSaveManager.deserializeFromJson(legacyJson)
+        assertNotNull(state)
+        assertEquals(6, state!!.pots.size)
+        assertEquals(0, state.pots[0].id)
+        assertTrue(state.pots[0].isUnlocked)
+        assertEquals(1, state.pots[1].id)
+        assertTrue(state.pots[1].isUnlocked)
+        assertEquals(2, state.pots[2].id)
+        assertFalse(state.pots[2].isUnlocked)
+        assertEquals(3, state.pots[3].id)
+        assertFalse(state.pots[3].isUnlocked)
+        assertEquals(4, state.pots[4].id)
+        assertFalse(state.pots[4].isUnlocked)
+        assertEquals(5, state.pots[5].id)
+        assertFalse(state.pots[5].isUnlocked)
     }
 
     @Test

@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import com.greentycoon.game.audio.SoundManager
 import com.greentycoon.game.model.GameAction
 import com.greentycoon.game.ui.GameViewModel
 import com.greentycoon.game.ui.MainGameScreen
@@ -17,6 +18,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Initialize low-latency game audio
+        SoundManager.init(applicationContext)
+
         // Safe Deep Link handling (fixes legacy NullPointerException bug)
         handleSafeIncomingIntent(intent)
 
@@ -24,6 +28,13 @@ class MainActivity : ComponentActivity() {
             GreenTycoonTheme {
                 MainGameScreen(viewModel = viewModel)
             }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            SoundManager.release()
         }
     }
 

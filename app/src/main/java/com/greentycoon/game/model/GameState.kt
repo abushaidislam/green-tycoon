@@ -8,6 +8,9 @@ data class PlayerProfile(
     val respectScore: Int = 10,
     val totalHarvestsGrams: Long = 0L
 ) {
+    val respect: Int
+        get() = respectScore
+
     val xpForNextLevel: Long
         get() = level * 100L + (level * level * 20L)
         
@@ -49,9 +52,11 @@ data class GameState(
     val player: PlayerProfile = PlayerProfile(),
     val pots: List<PotSlot> = listOf(
         PotSlot(id = 0, potType = PotType.PLASTIC, isUnlocked = true, plant = null),
-        PotSlot(id = 1, potType = PotType.PLASTIC, isUnlocked = false, plant = null),
+        PotSlot(id = 1, potType = PotType.PLASTIC, isUnlocked = true, plant = null),
         PotSlot(id = 2, potType = PotType.PLASTIC, isUnlocked = false, plant = null),
-        PotSlot(id = 3, potType = PotType.PLASTIC, isUnlocked = false, plant = null)
+        PotSlot(id = 3, potType = PotType.PLASTIC, isUnlocked = false, plant = null),
+        PotSlot(id = 4, potType = PotType.PLASTIC, isUnlocked = false, plant = null),
+        PotSlot(id = 5, potType = PotType.PLASTIC, isUnlocked = false, plant = null)
     ),
     val inventory: StashInventory = StashInventory(),
     val roomUpgrades: RoomUpgrades = RoomUpgrades(),
@@ -60,7 +65,17 @@ data class GameState(
     val lastVisitorDepartureTimestamp: Long = 0L,
     val lastSavedTimestamp: Long = System.currentTimeMillis(),
     val bannerNotification: String? = null
-)
+) {
+    fun calculateUnlockCost(potId: Int): Double = when (potId) {
+        0 -> 0.0
+        1 -> 150.0
+        2 -> 450.0
+        3 -> 1000.0
+        4 -> 2500.0
+        5 -> 5000.0
+        else -> 1000.0 * (potId.coerceAtLeast(1))
+    }
+}
 
 sealed class GameAction {
     data class WaterPot(val potId: Int) : GameAction()

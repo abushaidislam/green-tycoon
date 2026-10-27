@@ -15,9 +15,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import com.greentycoon.game.audio.SoundManager
 import com.greentycoon.game.model.*
-import com.greentycoon.game.ui.canvas.RoomCanvas
 import com.greentycoon.game.ui.components.*
+import com.greentycoon.game.ui.room.PanoramicRoomView
 import com.greentycoon.game.ui.theme.*
 
 @Composable
@@ -31,24 +35,32 @@ fun MainGameScreen(
     var showDealingSheet by remember { mutableStateOf(false) }
     var selectedEmptyPotId by remember { mutableStateOf<Int?>(null) }
     var showCashRegisterSummary by remember { mutableStateOf(false) }
+    var activeWateringPotId by remember { mutableStateOf<Int?>(null) }
+    var isMuted by remember { mutableStateOf(SoundManager.isMuted()) }
+
+    // Lifecycle-aware sound events collection: only play audio when app is in STARTED/RESUMED state
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.soundEvents.collect { event ->
+                SoundManager.play(event)
+            }
+        }
+    }
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // 1. Room Canvas (Wall, Floor, Pots, Lights, Door)
-        RoomCanvas(
+        // 1. Panoramic Weed Firm Room (Desk, Grow Room Pots, Door & Safe)
+        PanoramicRoomView(
             gameState = gameState,
             onPotClicked = { potId ->
                 val pot = gameState.pots.getOrNull(potId)
                 if (pot != null && pot.isUnlocked) {
                     if (pot.plant == null) {
                         selectedEmptyPotId = potId
-                    } else if (pot.plant.stage == GrowthStage.READY) {
-                        viewModel.handleAction(GameAction.HarvestPot(potId))
-                    } else {
-                        viewModel.handleAction(GameAction.WaterPot(potId))
                     }
                 }
             },
@@ -57,26 +69,36 @@ fun MainGameScreen(
                     showDealingSheet = true
                 }
             },
-            onWaterBottleClicked = {
-                // Water all plants
-                for (p in gameState.pots) {
-                    if (p.plant != null) {
-                        viewModel.handleAction(GameAction.WaterPot(p.id))
-                    }
-                }
-            },
-            onCashRegisterClicked = {
+            onDeskClicked = {
                 showCashRegisterSummary = true
             },
-            onSwitchRoomSide = { side ->
-                viewModel.handleAction(GameAction.SwitchRoomSide(side))
+            onUnlockPotClicked = { potId ->
+                viewModel.handleAction(GameAction.UnlockPot(potId))
             },
+            onUpgradePotClicked = { potId, targetPotType ->
+                viewModel.handleAction(GameAction.UpgradePot(potId, targetPotType))
+            },
+            onWaterPotClicked = { potId ->
+                activeWateringPotId = potId
+                viewModel.handleAction(GameAction.WaterPot(potId))
+            },
+            onFertilizePotClicked = { potId ->
+                viewModel.handleAction(GameAction.FertilizePot(potId))
+            },
+            onHarvestPotClicked = { potId ->
+                viewModel.handleAction(GameAction.HarvestPot(potId))
+            },
+            activeWateringPotId = activeWateringPotId,
+            onWateringAnimationEnd = { activeWateringPotId = null },
             modifier = Modifier.fillMaxSize()
         )
 
         // 2. Top HUD Overlay
-        TopHud(
+        AuthenticTopHud(
             gameState = gameState,
+            onOpenShop = { showShopDialog = true },
+            onToggleMute = { isMuted = SoundManager.toggleMute() },
+            isMuted = isMuted,
             modifier = Modifier.align(Alignment.TopCenter)
         )
 
@@ -100,16 +122,16 @@ fun MainGameScreen(
             }
         }
 
-        // 4. Knocking Alert Indicator on Door Side
-        if (gameState.currentRoomSide == RoomSide.PLANTS && gameState.currentVisitor != null) {
+        // 4. Customer Knocking Alert Notification Bar
+        if (gameState.currentVisitor != null) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 16.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(top = 70.dp, end = 16.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0xEEFF7043))
                     .clickable {
-                        viewModel.handleAction(GameAction.SwitchRoomSide(RoomSide.DOOR))
+                        showDealingSheet = true
                     }
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
@@ -126,6 +148,9 @@ fun MainGameScreen(
         PotActionRow(
             gameState = gameState,
             onWaterAllClicked = {
+                if (gameState.inventory.waterBottles > 0) {
+                    activeWateringPotId = gameState.pots.firstOrNull { it.plant != null }?.id
+                }
                 for (p in gameState.pots) {
                     if (p.plant != null) {
                         viewModel.handleAction(GameAction.WaterPot(p.id))

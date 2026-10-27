@@ -216,11 +216,7 @@ private fun EquipmentTab(
         val lockedPots = gameState.pots.filter { !it.isUnlocked }
         if (lockedPots.isNotEmpty()) {
             val nextPot = lockedPots.first()
-            val unlockCost = when (nextPot.id) {
-                1 -> 150.0
-                2 -> 450.0
-                else -> 1000.0
-            }
+            val unlockCost = gameState.calculateUnlockCost(nextPot.id)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
