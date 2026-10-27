@@ -3,14 +3,18 @@ package com.greentycoon.game.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.greentycoon.game.audio.GameSoundEvent
 import com.greentycoon.game.engine.DealingEngine
 import com.greentycoon.game.engine.GrowthEngine
 import com.greentycoon.game.model.*
 import com.greentycoon.game.storage.SecureSaveManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -26,6 +30,9 @@ class GameViewModel @JvmOverloads constructor(
 
     private val _gameState = MutableStateFlow(initialState ?: GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
+
+    private val _soundEvents = MutableSharedFlow<GameSoundEvent>(extraBufferCapacity = 16)
+    val soundEvents: SharedFlow<GameSoundEvent> = _soundEvents.asSharedFlow()
 
     private var loopJob: Job? = null
     private var tickCounter = 0
@@ -99,6 +106,7 @@ class GameViewModel @JvmOverloads constructor(
                     visitor = DealingEngine.tryGenerateVisitor(state, random)
                     if (visitor != null) {
                         notification = "Someone's knocking at the door! 🚪"
+                        _soundEvents.tryEmit(GameSoundEvent.DoorKnock)
                     }
                 }
             }
@@ -153,6 +161,7 @@ class GameViewModel @JvmOverloads constructor(
         val updatedPots = state.pots.map { if (it.id == potId) it.copy(plant = updatedPlant) else it }
         val updatedInv = state.inventory.copy(waterBottles = state.inventory.waterBottles - 1)
 
+        _soundEvents.tryEmit(GameSoundEvent.Water)
         return state.copy(pots = updatedPots, inventory = updatedInv)
     }
 
@@ -165,6 +174,7 @@ class GameViewModel @JvmOverloads constructor(
         val updatedPots = state.pots.map { if (it.id == potId) it.copy(plant = updatedPlant) else it }
         val updatedInv = state.inventory.copy(fertilizers = state.inventory.fertilizers - 1)
 
+        _soundEvents.tryEmit(GameSoundEvent.Fertilize)
         return state.copy(
             pots = updatedPots,
             inventory = updatedInv,
@@ -192,6 +202,7 @@ class GameViewModel @JvmOverloads constructor(
 
         val updatedPots = state.pots.map { if (it.id == potId) it.copy(plant = null) else it }
 
+        _soundEvents.tryEmit(GameSoundEvent.Harvest)
         return state.copy(
             pots = updatedPots,
             inventory = state.inventory.copy(harvestedStock = updatedStock),
@@ -346,6 +357,7 @@ class GameViewModel @JvmOverloads constructor(
             respectScore = state.player.respectScore + 1
         )
 
+        _soundEvents.tryEmit(GameSoundEvent.CashEarned)
         return state.copy(
             player = updatedPlayer,
             inventory = state.inventory.copy(harvestedStock = updatedStock),
