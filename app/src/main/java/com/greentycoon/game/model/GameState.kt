@@ -49,9 +49,11 @@ data class GameState(
     val player: PlayerProfile = PlayerProfile(),
     val pots: List<PotSlot> = listOf(
         PotSlot(id = 0, potType = PotType.PLASTIC, isUnlocked = true, plant = null),
-        PotSlot(id = 1, potType = PotType.PLASTIC, isUnlocked = false, plant = null),
+        PotSlot(id = 1, potType = PotType.PLASTIC, isUnlocked = true, plant = null),
         PotSlot(id = 2, potType = PotType.PLASTIC, isUnlocked = false, plant = null),
-        PotSlot(id = 3, potType = PotType.PLASTIC, isUnlocked = false, plant = null)
+        PotSlot(id = 3, potType = PotType.PLASTIC, isUnlocked = false, plant = null),
+        PotSlot(id = 4, potType = PotType.PLASTIC, isUnlocked = false, plant = null),
+        PotSlot(id = 5, potType = PotType.PLASTIC, isUnlocked = false, plant = null)
     ),
     val inventory: StashInventory = StashInventory(),
     val roomUpgrades: RoomUpgrades = RoomUpgrades(),

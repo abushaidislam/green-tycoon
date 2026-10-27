@@ -24,10 +24,10 @@ class PanoramicRoomLogicTest {
         val state = GameState()
         val chunked = state.pots.chunked(3)
         assertTrue("Pots should be chunked into rows of at most 3", chunked.all { it.size <= 3 })
-        assertEquals(4, state.pots.size)
+        assertEquals(6, state.pots.size)
         assertEquals(2, chunked.size)
         assertEquals(3, chunked[0].size)
-        assertEquals(1, chunked[1].size)
+        assertEquals(3, chunked[1].size)
     }
 
     @Test
