@@ -243,11 +243,7 @@ class GameViewModel @JvmOverloads constructor(
         val pot = state.pots.find { it.id == potId } ?: return state
         if (pot.isUnlocked) return state
 
-        val unlockCost = when (potId) {
-            1 -> 150.0
-            2 -> 450.0
-            else -> 1000.0
-        }
+        val unlockCost = state.calculateUnlockCost(potId)
         if (state.player.cash < unlockCost) return state.copy(bannerNotification = "Not enough cash!")
 
         val updatedPots = state.pots.map { if (it.id == potId) it.copy(isUnlocked = true) else it }

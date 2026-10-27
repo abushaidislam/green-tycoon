@@ -23,7 +23,7 @@ class GameViewModelSoundTest {
         val vm = GameViewModel(initialState = state, enableLoop = false)
 
         var emitted: GameSoundEvent? = null
-        val job = launch {
+        val job = launch(kotlinx.coroutines.Dispatchers.Unconfined) {
             emitted = vm.soundEvents.first()
         }
 
@@ -63,7 +63,7 @@ class GameViewModelSoundTest {
         val vm = GameViewModel(initialState = state, enableLoop = false)
 
         var emitted: GameSoundEvent? = null
-        val job = launch {
+        val job = launch(kotlinx.coroutines.Dispatchers.Unconfined) {
             emitted = vm.soundEvents.first()
         }
 
@@ -103,7 +103,7 @@ class GameViewModelSoundTest {
         val vm = GameViewModel(initialState = state, enableLoop = false)
 
         var emitted: GameSoundEvent? = null
-        val job = launch {
+        val job = launch(kotlinx.coroutines.Dispatchers.Unconfined) {
             emitted = vm.soundEvents.first()
         }
 
@@ -153,7 +153,7 @@ class GameViewModelSoundTest {
         val vm = GameViewModel(initialState = state, enableLoop = false)
 
         var emitted: GameSoundEvent? = null
-        val job = launch {
+        val job = launch(kotlinx.coroutines.Dispatchers.Unconfined) {
             emitted = vm.soundEvents.first()
         }
 

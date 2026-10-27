@@ -60,7 +60,17 @@ data class GameState(
     val lastVisitorDepartureTimestamp: Long = 0L,
     val lastSavedTimestamp: Long = System.currentTimeMillis(),
     val bannerNotification: String? = null
-)
+) {
+    fun calculateUnlockCost(potId: Int): Double = when (potId) {
+        0 -> 0.0
+        1 -> 150.0
+        2 -> 450.0
+        3 -> 1000.0
+        4 -> 2500.0
+        5 -> 5000.0
+        else -> 1000.0 * (potId.coerceAtLeast(1))
+    }
+}
 
 sealed class GameAction {
     data class WaterPot(val potId: Int) : GameAction()

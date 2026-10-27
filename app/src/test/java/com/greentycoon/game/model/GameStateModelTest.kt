@@ -47,4 +47,15 @@ class GameStateModelTest {
         val room4 = RoomUpgrades(lightLevel = 4)
         assertEquals(2.0f, room4.lightGrowthMultiplier, 0.001f)
     }
+
+    @Test
+    fun testCalculateUnlockCost() {
+        val state = GameState()
+        assertEquals(0.0, state.calculateUnlockCost(0), 0.001)
+        assertEquals(150.0, state.calculateUnlockCost(1), 0.001)
+        assertEquals(450.0, state.calculateUnlockCost(2), 0.001)
+        assertEquals(1000.0, state.calculateUnlockCost(3), 0.001)
+        assertEquals(2500.0, state.calculateUnlockCost(4), 0.001)
+        assertEquals(5000.0, state.calculateUnlockCost(5), 0.001)
+    }
 }

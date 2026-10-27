@@ -141,6 +141,12 @@ def extract_assets(apk_path: str = None):
                 shutil.copy2(src, dst)
                 extracted_sounds += 1
 
+        # Ensure alias for cut shears badge
+        cut_src = os.path.join(DRAWABLE_DIR, "cut_anim_0.png")
+        cut_dst = os.path.join(DRAWABLE_DIR, "cut.png")
+        if os.path.exists(cut_src):
+            shutil.copy2(cut_src, cut_dst)
+
         print(f"Extracted {extracted_sounds} sounds into {RAW_DIR}")
 
         # 3. Extract fonts
