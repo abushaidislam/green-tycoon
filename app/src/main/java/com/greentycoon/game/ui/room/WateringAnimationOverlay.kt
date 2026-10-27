@@ -30,6 +30,8 @@ fun WateringAnimationOverlay(
         )
     }
 
+    val currentOnAnimationEnd by rememberUpdatedState(onAnimationEnd)
+
     LaunchedEffect(isWatering) {
         if (isWatering) {
             repeat(2) {
@@ -39,7 +41,7 @@ fun WateringAnimationOverlay(
                 }
             }
             frameIndex = 0
-            onAnimationEnd()
+            currentOnAnimationEnd()
         }
     }
 

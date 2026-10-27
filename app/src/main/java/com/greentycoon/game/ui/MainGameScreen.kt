@@ -15,6 +15,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.greentycoon.game.audio.SoundManager
 import com.greentycoon.game.model.*
 import com.greentycoon.game.ui.components.*
@@ -34,10 +37,13 @@ fun MainGameScreen(
     var showCashRegisterSummary by remember { mutableStateOf(false) }
     var activeWateringPotId by remember { mutableStateOf<Int?>(null) }
 
-    // Collect sound events from GameViewModel and play through low-latency SoundManager
-    LaunchedEffect(Unit) {
-        viewModel.soundEvents.collect { event ->
-            SoundManager.play(event)
+    // Lifecycle-aware sound events collection: only play audio when app is in STARTED/RESUMED state
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.soundEvents.collect { event ->
+                SoundManager.play(event)
+            }
         }
     }
 
@@ -138,7 +144,9 @@ fun MainGameScreen(
         PotActionRow(
             gameState = gameState,
             onWaterAllClicked = {
-                activeWateringPotId = gameState.pots.firstOrNull { it.plant != null }?.id
+                if (gameState.inventory.waterBottles > 0) {
+                    activeWateringPotId = gameState.pots.firstOrNull { it.plant != null }?.id
+                }
                 for (p in gameState.pots) {
                     if (p.plant != null) {
                         viewModel.handleAction(GameAction.WaterPot(p.id))

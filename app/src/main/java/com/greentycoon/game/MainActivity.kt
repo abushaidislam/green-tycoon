@@ -33,7 +33,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        SoundManager.release()
+        if (isFinishing) {
+            SoundManager.release()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

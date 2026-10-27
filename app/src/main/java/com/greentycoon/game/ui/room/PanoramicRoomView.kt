@@ -43,9 +43,10 @@ fun PanoramicRoomView(
 ) {
     val scrollState = rememberScrollState()
     var localWateringPotId by remember { mutableStateOf<Int?>(null) }
-    var selectedPotForActions by remember { mutableStateOf<PotSlot?>(null) }
+    var selectedPotIdForActions by remember { mutableStateOf<Int?>(null) }
 
     val currentWateringId = activeWateringPotId ?: localWateringPotId
+    val selectedPot = gameState.pots.find { it.id == selectedPotIdForActions }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val roomHeight = maxHeight
@@ -100,7 +101,7 @@ fun PanoramicRoomView(
                             } else if (pot.plant.stage == GrowthStage.READY) {
                                 onHarvestPotClicked(pot.id)
                             } else {
-                                selectedPotForActions = pot
+                                selectedPotIdForActions = pot.id
                                 onPotClicked(pot.id)
                             }
                         } else {
@@ -133,25 +134,25 @@ fun PanoramicRoomView(
         }
     }
 
-    // Modal dialog for growing pot actions (Water, Fertilize, Upgrade)
-    selectedPotForActions?.let { pot ->
+    // Modal dialog for growing pot actions (Water, Fertilize, Upgrade) - updates reactively
+    selectedPot?.let { pot ->
         PotActionDialog(
             pot = pot,
             gameState = gameState,
             onWater = {
                 localWateringPotId = pot.id
                 onWaterPotClicked(pot.id)
-                selectedPotForActions = null
+                selectedPotIdForActions = null
             },
             onFertilize = {
                 onFertilizePotClicked(pot.id)
-                selectedPotForActions = null
+                selectedPotIdForActions = null
             },
             onUpgradePot = { targetType ->
                 onUpgradePotClicked(pot.id, targetType)
-                selectedPotForActions = null
+                selectedPotIdForActions = null
             },
-            onDismiss = { selectedPotForActions = null }
+            onDismiss = { selectedPotIdForActions = null }
         )
     }
 }
@@ -454,7 +455,10 @@ private fun PotSlotView(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 10.dp)
-                    .graphicsLayer(scaleX = scale, scaleY = scale)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xEE2E7D32))
                     .clickable { onHarvestClicked() }
@@ -606,7 +610,10 @@ private fun DoorAndSafeStation(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .offset(y = (-36).dp)
-                            .graphicsLayer(scaleX = pulseScale, scaleY = pulseScale)
+                            .graphicsLayer {
+                                scaleX = pulseScale
+                                scaleY = pulseScale
+                            }
                             .clip(RoundedCornerShape(14.dp))
                             .background(Color(0xFFE65100))
                             .clickable { onDoorClicked() }
