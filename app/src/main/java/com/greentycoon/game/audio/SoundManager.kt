@@ -4,14 +4,21 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
 import com.greentycoon.game.R
+import java.util.concurrent.ConcurrentHashMap
 
 object SoundManager {
+    @Volatile
     private var soundPool: SoundPool? = null
-    private val soundMap = mutableMapOf<Class<out GameSoundEvent>, Int>()
+    private val soundMap = ConcurrentHashMap<Class<out GameSoundEvent>, Int>()
+
+    @Volatile
     private var isMuted = false
 
+    @Synchronized
     fun init(context: Context) {
         if (soundPool != null) return
+
+        val appContext = context.applicationContext
 
         val attrs = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
@@ -22,13 +29,13 @@ object SoundManager {
             .setMaxStreams(8)
             .setAudioAttributes(attrs)
             .build().apply {
-                loadSound(context, GameSoundEvent.Water::class.java, R.raw.water, R.raw.watering)
-                loadSound(context, GameSoundEvent.Harvest::class.java, R.raw.cut)
-                loadSound(context, GameSoundEvent.Fertilize::class.java, R.raw.fertilize, R.raw.ds)
-                loadSound(context, GameSoundEvent.CashEarned::class.java, R.raw.earn)
-                loadSound(context, GameSoundEvent.DoorKnock::class.java, R.raw.bell)
-                loadSound(context, GameSoundEvent.DoorOpen::class.java, R.raw.door_open)
-                loadSound(context, GameSoundEvent.DoorClose::class.java, R.raw.door_close)
+                loadSound(appContext, GameSoundEvent.Water::class.java, R.raw.water, R.raw.watering)
+                loadSound(appContext, GameSoundEvent.Harvest::class.java, R.raw.cut)
+                loadSound(appContext, GameSoundEvent.Fertilize::class.java, R.raw.fertilize, R.raw.ds)
+                loadSound(appContext, GameSoundEvent.CashEarned::class.java, R.raw.earn)
+                loadSound(appContext, GameSoundEvent.DoorKnock::class.java, R.raw.bell)
+                loadSound(appContext, GameSoundEvent.DoorOpen::class.java, R.raw.door_open)
+                loadSound(appContext, GameSoundEvent.DoorClose::class.java, R.raw.door_close)
             }
     }
 
@@ -44,6 +51,7 @@ object SoundManager {
         }
     }
 
+    @Synchronized
     fun play(event: GameSoundEvent) {
         if (isMuted) return
         val soundId = soundMap[event::class.java] ?: return
@@ -61,9 +69,11 @@ object SoundManager {
         isMuted = muted
     }
 
+    @Synchronized
     fun release() {
-        soundPool?.release()
+        val pool = soundPool
         soundPool = null
         soundMap.clear()
+        pool?.release()
     }
 }
