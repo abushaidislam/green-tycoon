@@ -18,6 +18,7 @@ fun GreenTycoonTheme(
 ) {
     MaterialTheme(
         colorScheme = DarkColorScheme,
+        typography = Typography,
         content = content
     )
 }

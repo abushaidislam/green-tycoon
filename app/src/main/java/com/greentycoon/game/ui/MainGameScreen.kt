@@ -36,6 +36,7 @@ fun MainGameScreen(
     var selectedEmptyPotId by remember { mutableStateOf<Int?>(null) }
     var showCashRegisterSummary by remember { mutableStateOf(false) }
     var activeWateringPotId by remember { mutableStateOf<Int?>(null) }
+    var isMuted by remember { mutableStateOf(SoundManager.isMuted()) }
 
     // Lifecycle-aware sound events collection: only play audio when app is in STARTED/RESUMED state
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -93,8 +94,11 @@ fun MainGameScreen(
         )
 
         // 2. Top HUD Overlay
-        TopHud(
+        AuthenticTopHud(
             gameState = gameState,
+            onOpenShop = { showShopDialog = true },
+            onToggleMute = { isMuted = SoundManager.toggleMute() },
+            isMuted = isMuted,
             modifier = Modifier.align(Alignment.TopCenter)
         )
 

@@ -8,6 +8,9 @@ data class PlayerProfile(
     val respectScore: Int = 10,
     val totalHarvestsGrams: Long = 0L
 ) {
+    val respect: Int
+        get() = respectScore
+
     val xpForNextLevel: Long
         get() = level * 100L + (level * level * 20L)
         
