@@ -17,7 +17,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.Random
 
-class GameViewModel(
+class GameViewModel @JvmOverloads constructor(
     application: Application? = null,
     initialState: GameState? = null,
     private val enableLoop: Boolean = true,
